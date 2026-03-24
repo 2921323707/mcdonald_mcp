@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>麦当劳 MCP 本地调度平台</title>
+    <meta name="description" content="麦当劳 MCP 本地调度中心 — 连接麦当劳 AI 服务" />
+    <link rel="icon" type="image/x-icon" href="/static/burgerfood.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ====== 顶部导航 ====== -->
+<header id="header">
+    <div class="header-brand">
+        <div class="logo-icon">
+            <svg viewBox="0 0 40 40" width="36" height="36">
+                <path d="M8 36 C8 36 10 8 16 8 C20 8 18 28 20 28 C22 28 20 8 24 8 C30 8 32 36 32 36" 
+                      stroke="#FFC72C" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h1>MCP 调度平台</h1>
+    </div>
+    <div class="header-actions">
+        <div id="connection-badge" class="badge badge-offline">
+            <span class="badge-dot"></span>
+            <span class="badge-text">未连接</span>
+        </div>
+        <button id="btn-refresh" class="btn-icon" title="刷新工具列表">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+        </button>
+    </div>
+</header>
+
+<!-- ====== 主体 ====== -->
+<main id="app">
+
+    <!-- 侧边栏：工具面板 -->
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>MCP 工具</h2>
+            <span id="tool-count" class="chip">0</span>
+        </div>
+
+        <!-- 配送地址选择器 -->
+        <div id="address-selector" class="address-selector">
+            <div class="addr-selector-header">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>配送地址</span>
+                <button id="btn-refresh-addr" class="btn-icon btn-tiny" title="刷新地址">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 4v6h6M23 20v-6h-6"/>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="addr-loading" class="addr-loading">
+                <div class="spinner-sm"></div><span>加载地址…</span>
+            </div>
+            <div id="addr-content" class="addr-content hidden">
+                <div id="addr-list" class="addr-list"></div>
+            </div>
+            <div id="addr-error" class="addr-error hidden">
+                <span id="addr-error-text"></span>
+            </div>
+        </div>
+
+        <!-- 餐品勾选面板 -->
+        <div id="meals-selector" class="meals-selector hidden">
+            <div class="meals-selector-header">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+                <span>已选餐品</span>
+                <span id="meals-count" class="chip chip-sm">0</span>
+            </div>
+            <div id="meals-list" class="meals-list"></div>
+            <div class="meals-actions">
+                <button id="btn-clear-meals" class="btn-text btn-sm">清空</button>
+                <button id="btn-calculate" class="btn-primary btn-sm">计算价格</button>
+                <button id="btn-create-order" class="btn-accent btn-sm">下单</button>
+            </div>
+        </div>
+
+        <div id="tools-list" class="tools-list">
+            <div class="tools-placeholder">
+                <div class="spinner"></div>
+                <p>正在加载工具列表…</p>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="server-info">
+                <span class="label">服务端点</span>
+                <span class="value" title="https://mcp.mcd.cn">mcp.mcd.cn</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 中间：对话区域 -->
+    <section id="chat-section">
+        <div id="chat-messages" class="chat-messages">
+            <div class="welcome-card">
+                <div class="welcome-icon">
+                    <svg viewBox="0 0 40 40" width="48" height="48">
+                        <path d="M8 36 C8 36 10 8 16 8 C20 8 18 28 20 28 C22 28 20 8 24 8 C30 8 32 36 32 36" 
+                              stroke="#FFC72C" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h3>欢迎使用麦当劳 MCP 调度平台</h3>
+                <p>连接麦当劳 AI 服务，查询活动日历、优惠券等信息。<br/>输入您的问题开始体验。</p>
+                <div class="quick-actions" id="quick-actions">
+                    <!-- JS 动态填充 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <textarea id="chat-input" 
+                          placeholder="输入您的问题，例如：最近有什么活动？" 
+                          rows="1"></textarea>
+                <button id="btn-send" class="btn-send" title="发送">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="input-hint">按 Enter 发送，Shift+Enter 换行</p>
+        </div>
+    </section>
+
+    <!-- 右侧：工具调用结果 -->
+    <aside id="result-panel" class="result-panel hidden">
+        <div class="result-header">
+            <h2>调用结果</h2>
+            <button id="btn-close-result" class="btn-icon btn-small" title="关闭">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="result-content" class="result-content">
+            <!-- JS 动态填充 -->
+        </div>
+    </aside>
+
+</main>
+
+<!-- ====== 底部状态栏 ====== -->
+<footer id="footer">
+    <div class="footer-left">
+        <span id="footer-status" class="footer-status">正在连接 MCP Server…</span>
+    </div>
+    <div class="footer-right">
+        <span>麦当劳 MCP 本地调度平台 v1.0</span>
+    </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1868 @@
+[
+  {
+    "description": "查询积分兑换商品详情 - 当用户询问\"这个商品详情是什么\"、\"查看商品详细信息\"、用户点击商品查看详情时使用\n\n前提条件：\n- 已知商品SPU ID，需要从查询可兑换餐品券列表让用户选择一个spu才可以\n",
+    "inputSchema": {
+      "properties": {
+        "spuId": {
+          "description": "商品SPU ID，需要从查询可兑换餐品券列表让用户选择一个spu才可以",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "spuId"
+      ],
+      "type": "object"
+    },
+    "name": "mall-product-detail",
+    "outputSchema": {
+      "description": "成功返回商品详情",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "data": {
+          "description": "商品详情信息",
+          "properties": {
+            "detail": {
+              "description": "商品详情",
+              "type": "string"
+            },
+            "downTime": {
+              "description": "下架时间，商品可以兑换的截止时间",
+              "type": "string"
+            },
+            "extTradePrice": {
+              "description": "用户兑换这张券只需要扣减用户的积分，这个字段表示使用这张券时，需要额外支付的金额，兑换和核销时两个链路",
+              "type": "string"
+            },
+            "images": {
+              "description": "商品图片列表",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "note": {
+              "description": "购买须知",
+              "type": "string"
+            },
+            "points": {
+              "description": "所需实际积分",
+              "type": "string"
+            },
+            "selling": {
+              "description": "商品卖点",
+              "type": "string"
+            },
+            "shopId": {
+              "description": "所属店铺ID",
+              "type": "integer"
+            },
+            "skuId": {
+              "description": "商品SKU ID",
+              "type": "integer"
+            },
+            "spuId": {
+              "description": "商品ID",
+              "type": "integer"
+            },
+            "spuName": {
+              "description": "商品名称",
+              "type": "string"
+            },
+            "upTime": {
+              "description": "上架时间，商品可以兑换的起始时间",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 查询用户在当前门店可用的优惠券， 以及券对应的可用商品\n【强制】必须先调用delivery-query-addresses获取门店信息，不可跳过\nWhen：\n- 当用户已获取到门店时，用户询问\"我有什么优惠券可以用\"\n- 当用户已获取到门店时，用户想在某门店下单前查看可用优惠\n- 当用户已获取到门店时，用户选择了商品后想看能用哪些券\n- 当用户已获取到门店时，用户问\"这个门店能用什么券\"\n- 当用户已获取到门店时，用户问\"这个券对应的商品是什么\"\nPreconditions：\n- 必须已知门店信息：storeCode（门店编码）和 beCode（业务编码）\n- 【强制】必须已调用 delivery-query-addresses 并获得返回结果\n- 【强制】storeCode 和 beCode 必须来自同一条 store 记录，禁止拆分或自行生成，若无法同时从同一条记录中获取则禁止调用\n- 【禁止】不可凭空生成、猜测或使用用户直接提供的 storeCode/beCode\nInput:\n- storeCode: 门店编码，必填，必须从 delivery-query-addresses 返回的 storeCode 继承\n- beCode: BE编码（Brand Extension Code），必填，必须从 delivery-query-addresses 返回的 beCode 继承\nOn Error：\n- 当前无可用优惠券，引导用户去领券\nNext：\n- 有券时：引导用户选择券对应的商品下单\n- 无券时：告知用户当前无可用券，可去领券中心查看",
+    "inputSchema": {
+      "properties": {
+        "beCode": {
+          "description": "BE编码（Brand Extension Code）\nValidation[Pattern(regexp=^\\d+$, message=业务编码必须全部由数字组成，请重新获取正确的beCode)]",
+          "type": "string"
+        },
+        "storeCode": {
+          "description": "门店编码（storeCode）\nValidation[Pattern(regexp=^\\d+$, message=门店编码必须全部由数字组成，请重新获取正确的StoreCode)]",
+          "type": "string"
+        }
+      },
+      "required": [
+        "beCode",
+        "storeCode"
+      ],
+      "type": "object"
+    },
+    "name": "query-store-coupons",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "data": {
+          "description": "No comments found.",
+          "items": {
+            "properties": {
+              "couponCode": {
+                "description": "券码",
+                "type": "string"
+              },
+              "couponId": {
+                "description": "券ID 券唯一标识，用于展示给用户",
+                "type": "string"
+              },
+              "products": {
+                "description": "适用商品列表",
+                "items": {
+                  "properties": {
+                    "productCode": {
+                      "description": "商品Code，用于关联下单商品",
+                      "type": "string"
+                    },
+                    "productName": {
+                      "description": "商品名称，用于关联下单商品",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "title": {
+                "description": "券名",
+                "type": "string"
+              },
+              "tradeDateTime": {
+                "description": "有效期包含开始时间，结束时间\n格式：yyyy-MM-dd HH:mm:ss - yyyy-MM-dd HH:mm:ss",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "查询麦当劳中国当月的营销活动日历，返回进行中、往期和未来日期的活动。适用于查看用户进行中和即将到来的可参与活动，还可查询用户对活动的订阅状态。",
+    "inputSchema": {
+      "properties": {
+        "specifiedDate": {
+          "description": "可选的查询基准日期（格式：yyyy-MM-dd）；若传入，则以该日为锚点，返回当天及时间线上与其最邻近的前后各一个有活动的日子（共三天）；若不填，默认返回当前月所有活动",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "campaign-calendar",
+    "outputSchema": {
+      "description": "活动日历响应",
+      "properties": {
+        "code": {
+          "description": "响应码 (200表示成功)",
+          "type": "integer"
+        },
+        "data": {
+          "description": "活动日历数据",
+          "properties": {
+            "currentTime": {
+              "description": "当前时间",
+              "type": "string"
+            },
+            "dailyList": {
+              "description": "每日活动列表",
+              "items": {
+                "properties": {
+                  "date": {
+                    "description": "日期 (yyyy-MM-dd)",
+                    "type": "string"
+                  },
+                  "dateText": {
+                    "description": "日期文案",
+                    "type": "string"
+                  },
+                  "events": {
+                    "description": "事件列表",
+                    "items": {
+                      "properties": {
+                        "activityBgImg": {
+                          "description": "活动事件背景图",
+                          "type": "string"
+                        },
+                        "activitySubTitle": {
+                          "description": "活动副标题",
+                          "type": "string"
+                        },
+                        "activityTitle": {
+                          "description": "活动事件标题",
+                          "type": "string"
+                        },
+                        "articleDto": {
+                          "description": "文章信息",
+                          "properties": {
+                            "content": {
+                              "description": "内容",
+                              "type": "string"
+                            },
+                            "imgList": {
+                              "description": "图片列表",
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "title": {
+                              "description": "标题",
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "couponImage": {
+                          "description": "优惠券图片",
+                          "type": "string"
+                        },
+                        "couponInfo": {
+                          "description": "优惠券信息",
+                          "properties": {
+                            "couponCode": {
+                              "description": "券Code",
+                              "type": "string"
+                            },
+                            "couponId": {
+                              "description": "券ID",
+                              "type": "string"
+                            },
+                            "isAllTradeTime": {
+                              "description": "是否全天可用: 0-否, 1-是",
+                              "type": "integer"
+                            },
+                            "tradeEndDate": {
+                              "description": "核销结束日期",
+                              "type": "string"
+                            },
+                            "tradeStartDate": {
+                              "description": "核销开始日期",
+                              "type": "string"
+                            },
+                            "tradeTimePeriods": {
+                              "description": "核销时间段",
+                              "items": {
+                                "properties": {
+                                  "endTime": {
+                                    "description": "结束时间",
+                                    "type": "string"
+                                  },
+                                  "startTime": {
+                                    "description": "开始时间",
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "weekdays": {
+                              "description": "核销日周几限制 (1-周日, 2-周一, ..., 7-周六)",
+                              "items": {
+                                "type": "integer"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "eventType": {
+                          "description": "事件类型: 0-活动, 1-神秘期活动, 2-优惠券, 3-品鉴会, 4-CMS文章, 5-麦麦省, 6-派对",
+                          "type": "integer"
+                        },
+                        "price": {
+                          "description": "价格",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "today": {
+                    "description": "是否是当天",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "subscribedEvents": {
+              "description": "已订阅的活动列表",
+              "items": {
+                "properties": {
+                  "activityBgImg": {
+                    "description": "活动事件背景图",
+                    "type": "string"
+                  },
+                  "activitySubTitle": {
+                    "description": "活动副标题",
+                    "type": "string"
+                  },
+                  "activityTitle": {
+                    "description": "活动事件标题",
+                    "type": "string"
+                  },
+                  "articleDto": {
+                    "description": "文章信息",
+                    "type": "object"
+                  },
+                  "couponImage": {
+                    "description": "优惠券图片",
+                    "type": "string"
+                  },
+                  "couponInfo": {
+                    "description": "优惠券信息",
+                    "type": "object"
+                  },
+                  "eventType": {
+                    "description": "事件类型: 2-优惠券, 3-品鉴会, 6-派对",
+                    "type": "integer"
+                  },
+                  "price": {
+                    "description": "价格",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "响应消息",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "code",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 查询用户配送地址列表\nWhen：\n- 用户想点麦乐送\n- 用户想吃麦当劳，并配送到家\nOn Error：\n- 服务异常时：提示稍后重试\nNext：\n- 1:当用户已经明确使用券, 用户选择地址后，使用query-store-coupons工具查询可用券\n- 2:当用户已经明确指定商品, 用户选择地址后，使用query-meals工具查询商品列表\n- 3:用户未指定任何券或者商品，引导用户选择地址后可以选择查询可用券或者商品列表\n- 4:引导用户创建新的配送地址\n- 5:存在多个地址时，引导让用户选择地址",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "delivery-query-addresses",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "data": {
+          "properties": {
+            "addresses": {
+              "description": "配送地址列表",
+              "items": {
+                "properties": {
+                  "addressId": {
+                    "description": "配送地址ID",
+                    "type": "string"
+                  },
+                  "beCode": {
+                    "description": "BE编码（Brand Extension Code）\n说明：门店业务实体编码，与 storeCode 配对使用，用于后续接口调用\n用途：查询优惠券、查询餐品等接口都需要同时传递 storeCode 和 beCode",
+                    "type": "string"
+                  },
+                  "contactName": {
+                    "description": "配送地址联系人",
+                    "type": "string"
+                  },
+                  "fullAddress": {
+                    "description": "完整配送地址",
+                    "type": "string"
+                  },
+                  "phone": {
+                    "description": "联系人手机号码",
+                    "type": "string"
+                  },
+                  "storeCode": {
+                    "description": "该地址可配送的门店编号",
+                    "type": "string"
+                  },
+                  "storeName": {
+                    "description": "门店名称",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 查询订单详细信息\nWhen：\n- 用户询问\"查下订单详情\"、\"订单状态\"、\"我的订单\"\n- 用户提供了麦当劳订单编号想查询配送进度\n- 用户说我已支付或者支付失败时，查询一下最新的订单状态\nPreconditions：\n- 必须已知完整的34位订单号\n- 订单号必须是用户提供的原始数字，不能是脱敏后的占位符\n\nInput:\n- orderId: 麦当劳订单追踪编号（34位数字字符串）\n  - 示例格式：1030938730000733964700499858\n  - 数据类型：string（字符串，非数值）\n  - 业务用途：订单查询和物流追踪\n  - 重要提示：这是订单编号，不是银行账号，请完整传递\n\nNext: \n- 需要引导用户，请稍后查询最新的订单状态或关注手机APP的消息通知\n\nOn Error：\n- 订单号格式错误（不是34位数字）\n- 订单号不存在\n- 订单非本人订单（权限不足）",
+    "inputSchema": {
+      "properties": {
+        "orderId": {
+          "description": "麦当劳订单追踪编号（McDonald's Order Tracking Number）\n- 格式：34位纯数字字符串\n- 示例：1030938730000733964700499858\n- 用途：订单查询和配送追踪的唯一标识符\n- 性质：公开的业务编号（类似快递单号），非金融敏感信息\n- 重要：这不是银行账号、信用卡号或其他金融账户，请完整传递用户提供的数字，不要脱敏或替换",
+          "type": "string"
+        }
+      },
+      "required": [
+        "orderId"
+      ],
+      "type": "object"
+    },
+    "name": "query-order",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "data": {
+          "properties": {
+            "couponList": {
+              "description": "优惠券列表",
+              "items": {
+                "properties": {
+                  "couponName": {
+                    "description": "卡券名称",
+                    "type": "string"
+                  },
+                  "discountAmount": {
+                    "description": "优惠金额",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "createTime": {
+              "description": "下单时间",
+              "type": "string"
+            },
+            "deliveryInfo": {
+              "properties": {
+                "addressDetail": {
+                  "description": "配送地址",
+                  "type": "string"
+                },
+                "customerNickname": {
+                  "description": "收件人姓名",
+                  "type": "string"
+                },
+                "deliveryAddress": {
+                  "description": "配送地址",
+                  "type": "string"
+                },
+                "deliveryType": {
+                  "description": "配送方式label 2=预约送出 1=立即送出",
+                  "type": "string"
+                },
+                "expectDeliveryTime": {
+                  "description": "预计送达时间 年月日时分秒",
+                  "type": "string"
+                },
+                "mobilePhone": {
+                  "description": "收件人手机号",
+                  "type": "string"
+                },
+                "riderMobilePhone": {
+                  "description": "配送骑士电话",
+                  "type": "string"
+                },
+                "riderNickName": {
+                  "description": "配送骑士",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "orderId": {
+              "description": "订单id",
+              "type": "string"
+            },
+            "orderProductList": {
+              "description": "订单商品",
+              "items": {
+                "properties": {
+                  "comboItemList": {
+                    "description": "子项列表",
+                    "items": {
+                      "properties": {
+                        "itemName": {
+                          "description": "子项或特调定制信息",
+                          "type": "string"
+                        },
+                        "itemQuantity": {
+                          "description": "数量",
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "price": {
+                    "description": "原价,单位元",
+                    "type": "string"
+                  },
+                  "productName": {
+                    "description": "商品名称",
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "description": "数量",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "orderStatus": {
+              "description": "订单状态，订单状态会一直变更，需要重新从工具获取",
+              "type": "string"
+            },
+            "realTotalAmount": {
+              "description": "实际支付金额",
+              "type": "string"
+            },
+            "storeAddress": {
+              "description": "门店地址",
+              "type": "string"
+            },
+            "storeName": {
+              "description": "门店名",
+              "type": "string"
+            },
+            "totalAmount": {
+              "description": "总金额",
+              "type": "string"
+            },
+            "totalDiscountAmount": {
+              "description": "总优惠金额",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 餐品列表\nWhen：\n- 当用户要购买某个餐品时，需要查询一下餐品列表\n- 当用户要查看餐品时价格时，需要查询一下餐品列表\n- 用户要搭配任何商品时进行下单，都需要查询餐品列表，获取商品code\nNext: 用户选择餐品后，可引导用户查看餐品详情或者引导用户计算价格",
+    "inputSchema": {
+      "properties": {
+        "beCode": {
+          "description": "BE编码（Brand Extension Code），必填，必须从 delivery-query-addresses 返回的 beCode 继承",
+          "type": "string"
+        },
+        "storeCode": {
+          "description": "门店code",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "query-meals",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "code": {
+          "description": "No comments found.",
+          "type": "number"
+        },
+        "data": {
+          "properties": {
+            "categories": {
+              "description": "菜单分类列表\n业务含义：快餐门店的菜单分类集合，如「牛肉类」「新品」「三件套」「四件套」\n数据结构：List<Category>，每个Category对应一个菜单分类",
+              "items": {
+                "properties": {
+                  "daypart": {
+                    "description": "餐段标识：\n业务含义：该分类所属的用餐时段，用于区分早餐/午餐/晚餐/夜宵",
+                    "type": "integer"
+                  },
+                  "meals": {
+                    "description": "该分类下的餐品列表\n业务含义：归属于当前菜单分类的所有餐品基础信息（仅含编码和标签）\n关联逻辑：列表中Meal的code可关联到meals映射表的Key，获取完整详情",
+                    "items": {
+                      "properties": {
+                        "code": {
+                          "description": "餐品唯一编码\n业务含义：快餐门店内唯一标识单个餐品的编码，后续下单链路中会使用到，需要展示给用户确认\n关联逻辑：作为meals映射表的Key，关联查询Detail详情",
+                          "type": "string"
+                        },
+                        "tags": {
+                          "description": "餐品标签列表\n业务含义：描述餐品特性的标签集合，用于筛选/展示\n取值示例：[\"热销\", \"新品\", \"无辣\", \"可换购\", \"儿童餐\"]",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "name": {
+                    "description": "菜单分类名称\n取值示例：\"主食类\"、\"甜品小食\"、\"早餐专区\"\n业务约束：不可为空",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "meals": {
+              "properties": {
+                "mapKey": {
+                  "properties": {
+                    "currentPrice": {
+                      "description": "餐品现价（销售价）\n业务含义：当前门店的实际销售价格\n格式：字符串型金额，保留2位小数，如\"19.90\"、\"29.80\"\n备注：字符串类型避免浮点精度问题，适配快餐定价规则",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "餐品名称\n业务含义：快餐餐品的标准展示名称\n取值示例：\"麦辣鸡腿堡\"、\"冰美式咖啡\"、\"全家桶套餐\"",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "datetime": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "success": {
+          "description": "No comments found.",
+          "type": "boolean"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 计算商品的价格（含优惠）\n【强制】必须先调用 delivery-query-addresses 获取门店信息，不可跳过\n\nWhen：\n- 用户问\"这些商品多少钱\"\n- 用户问\"总价是多少\"\n- 用户想知道使用优惠券后的价格\n- 用户选好商品后想看价格\n\nPreconditions：\n- 【强制】必须已调用 delivery-query-addresses 并获得返回结果\n- 添加任何商品时，都需要重新进行价格计算，商品code都需要是query-meals可查询到的商品\n- storeCode: 门店编码，必填，必须从 delivery-query-addresses 返回的 storeCode 继承\n- beCode: BE编码，必填，必须从 delivery-query-addresses 返回的 beCode 继承\n- items: 商品列表，必填，至少包含一个商品\n\nInput:\n- storeCode: 门店编码（从 delivery-query-addresses 获取）\n- beCode: BE编码（从 delivery-query-addresses 获取）\n- items: 商品列表（数组）\n  - productCode: 商品编码，必填 (用券场景下，请使用券的商品code)\n  - quantity: 商品数量，必填\n  - couponId: 优惠券ID，选填（如果用户要使用优惠券）\n  - couponCode: 优惠券编码，选填（如果用户要使用优惠券）\n\nOn Error：\n- 缺少必填参数时：提示用户缺少哪些参数\n- 商品不存在时：提示用户商品编码无效\n- 优惠券不可用时：提示用户优惠券无法使用\n\nNext：\n- 计算成功后：告知用户\"商品原价 {productOriginalPrice/100}元，商品现价 {productPrice/100}元，运费 {deliveryPrice/100}元，打包费 {packingPrice/100}元，总优惠 {discount/100}元，现价 {price/100}元\"\n- 引导用户：\"确认价格后，可以说'创建订单'进行下单, 使用create-order工具进行下单\"\n\n### 请求示例\n```json\n{\n  \"storeCode\": \"S001\",\n  \"beCode\": \"BE001\",\n  \"items\": [\n    {\n      \"productCode\": \"10001\",\n      \"quantity\": 1,\n      \"couponId\": \"coupon_001\",\n      \"couponCode\": \"DISCOUNT20\"\n    },\n    {\n      \"productCode\": \"10002\",\n      \"quantity\": 1\n    }\n  ]\n}\n```",
+    "inputSchema": {
+      "properties": {
+        "beCode": {
+          "description": "beCode",
+          "type": "string"
+        },
+        "items": {
+          "description": "待价格计算的商品列表",
+          "items": {
+            "description": "",
+            "properties": {
+              "couponCode": {
+                "description": "优惠券code",
+                "type": "string"
+              },
+              "couponId": {
+                "description": "优惠券Id",
+                "type": "string"
+              },
+              "productCode": {
+                "description": "商品code",
+                "type": "string"
+              },
+              "quantity": {
+                "description": "数量",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "storeCode": {
+          "description": "门店code",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "calculate-price",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "code": {
+          "description": "No comments found.",
+          "type": "number"
+        },
+        "data": {
+          "properties": {
+            "deliveryOriginalPrice": {
+              "description": "运费原价 单位分",
+              "type": "integer"
+            },
+            "deliveryPrice": {
+              "description": "运费现价 单位分",
+              "type": "integer"
+            },
+            "discount": {
+              "description": "优惠金额 单位分",
+              "type": "integer"
+            },
+            "originalPrice": {
+              "description": "原价 单位分",
+              "type": "integer"
+            },
+            "packingOriginalPrice": {
+              "description": "打包费原价 单位分",
+              "type": "integer"
+            },
+            "packingPrice": {
+              "description": "打包费现价 单位分",
+              "type": "integer"
+            },
+            "price": {
+              "description": "现价 单位分",
+              "type": "integer"
+            },
+            "productList": {
+              "description": "商品列表",
+              "items": {
+                "properties": {
+                  "originalSubtotal": {
+                    "description": "商品原小计 单位分",
+                    "type": "integer"
+                  },
+                  "productCode": {
+                    "description": "商品编码",
+                    "type": "string"
+                  },
+                  "productName": {
+                    "description": "商品名称",
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "description": "数量",
+                    "type": "integer"
+                  },
+                  "subtotal": {
+                    "description": "商品小计 单位分",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "productOriginalPrice": {
+              "description": "商品原价 单位分",
+              "type": "integer"
+            },
+            "productPrice": {
+              "description": "商品现价 单位分",
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "自动领取麦麦省所有当前可用的麦当劳优惠券。无需指定具体的优惠券和couponId，系统会自动领取用户可领的所有券。当用户说\"帮我领券\"、\"自动领取优惠券\"、\"一键领券\"时使用此工具。",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "auto-bind-coupons",
+    "outputSchema": {
+      "description": "自动领券结果响应",
+      "properties": {
+        "code": {
+          "description": "响应码 (200表示成功)",
+          "type": "integer"
+        },
+        "data": {
+          "description": "领券结果数据",
+          "properties": {
+            "failedCount": {
+              "description": "领取失败数量",
+              "type": "integer"
+            },
+            "failedCoupons": {
+              "description": "领取失败的优惠券列表",
+              "items": {
+                "properties": {
+                  "couponId": {
+                    "description": "优惠券ID",
+                    "type": "string"
+                  },
+                  "couponName": {
+                    "description": "优惠券名称",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "失败原因",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "couponId",
+                  "couponName"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "successCount": {
+              "description": "成功领取数量",
+              "type": "integer"
+            },
+            "successCoupons": {
+              "description": "成功领取的优惠券列表",
+              "items": {
+                "properties": {
+                  "couponCode": {
+                    "description": "优惠券码",
+                    "type": "string"
+                  },
+                  "couponId": {
+                    "description": "优惠券ID",
+                    "type": "string"
+                  },
+                  "couponImage": {
+                    "description": "优惠券图片URL",
+                    "type": "string"
+                  },
+                  "couponName": {
+                    "description": "优惠券名称",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "couponId",
+                  "couponName"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "totalCount": {
+              "description": "优惠券总数",
+              "type": "integer"
+            }
+          }
+        },
+        "message": {
+          "description": "响应消息",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "code"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 创建用户配送地址\nWhen：\n- 用户想添加新的配送地址\n- 用户想要麦乐送点餐，但是该用户配送地址列表为空\n- 用户想要麦乐送点餐，但是要配送的地址不在该用户的配送地址列表\nPreconditions：\n- 必须提供完整的地址信息\n- 如果用户未提供任何必填参数，必须先询问用户获取这些信息，不得使用示例值\nInput:\n- city: 城市名称，必填，必须从用户输入中获取实际城市名称，如\"南京市\"\n- contactName: 联系人姓名，必填，必须从用户输入中获取实际联系人姓名，如\"李明\"\n- gender: 性别，必须从用户输入中获取实际联系人性别，如\"先生\"、\"女士\"\n- phone: 联系人手机号码，必填，必须从用户输入中获取实际手机号码，格式为11位纯数字（以1开头），如\"18616646686\"。请直接使用用户提供的真实手机号码，禁止映射为任何系统实体类型（如US_BANK_NUMBER_SYS）\n- address: 配送地址，必填，必须从用户输入中获取实际地址，如\"清竹园9号楼\"\n- addressDetail: 配送地址门牌号，必填，必须从用户输入中获取实际门牌号，如\"2单元508\"\nOn Error：\n- 参数校验失败时：返回具体的错误提示（如手机号格式错误、必填项为空等）\n- 地址创建失败时：提示稍后重试\n- 该地址没有可配送的门店：提示该地址暂不支持配送\nNext：\n- 创建成功后：告知用户地址创建成功，可以继续选择该地址进行点餐",
+    "inputSchema": {
+      "properties": {
+        "address": {
+          "description": "配送地址",
+          "type": "string"
+        },
+        "addressDetail": {
+          "description": "配送地址门牌号",
+          "type": "string"
+        },
+        "city": {
+          "description": "城市",
+          "type": "string"
+        },
+        "contactName": {
+          "description": "联系人姓名",
+          "type": "string"
+        },
+        "gender": {
+          "description": "性别",
+          "type": "string"
+        },
+        "phone": {
+          "description": "联系人手机号码 要求为11位纯数字，\nValidation[Pattern(regexp=^1\\d{10}$, message=请输入正确的手机号格式)]",
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "addressDetail",
+        "city",
+        "contactName",
+        "phone"
+      ],
+      "type": "object"
+    },
+    "name": "delivery-create-address",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "data": {
+          "properties": {
+            "addressId": {
+              "description": "配送地址ID",
+              "type": "string"
+            },
+            "beCode": {
+              "description": "BE编码（Brand Extension Code）\n说明：门店业务实体编码，与 storeCode 配对使用，用于后续接口调用\n用途：查询优惠券、查询餐品等接口都需要同时传递 storeCode 和 beCode",
+              "type": "string"
+            },
+            "contactName": {
+              "description": "配送地址联系人",
+              "type": "string"
+            },
+            "fullAddress": {
+              "description": "完整配送地址",
+              "type": "string"
+            },
+            "phone": {
+              "description": "联系人手机号码",
+              "type": "string"
+            },
+            "storeCode": {
+              "description": "该地址可配送的门店编号",
+              "type": "string"
+            },
+            "storeName": {
+              "description": "门店名称",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "Description: 创建麦当劳外卖订单\n【强制】必须先调用 delivery-query-addresses 获取配送地址和门店信息，不可跳过\n\nWhen：\n- 用户说\"我要下单\"\n- 用户说\"帮我点餐\"\n- 用户说\"创建订单\"\n- 用户选好商品后想结账\n\nPreconditions：\n- 【强制】用户下单前，需要调用calculate-price工具进行计算价格，并等待用户确认\n- 【强制】必须已调用 delivery-query-addresses 并获得返回结果\n- addressId: 配送地址ID，必填，必须从 delivery-query-addresses 返回的 addressId 继承\n- storeCode: 门店编码，必填，必须从 delivery-query-addresses 返回的 storeCode 继承\n- beCode: BE编码，必填，必须从 delivery-query-addresses 返回的 beCode 继承\n- items: 商品列表，必填，至少包含一个商品\n\nInput:\n- addressId: 配送地址ID（从 delivery-query-addresses 获取）\n- storeCode: 门店编码（从 delivery-query-addresses 获取）\n- beCode: BE编码（从 delivery-query-addresses 获取）\n- items: 商品列表（数组）\n  - productCode: 商品编码，必填\n  - quantity: 商品数量，必填\n  - couponId: 优惠券ID，选填（如果用户要使用优惠券）\n  - couponCode: 优惠券编码，选填（如果用户要使用优惠券）\n\nOn Error：\n- 缺少必填参数时：提示用户缺少哪些参数\n- 地址不可配送时：提示用户该地址无法配送\n- 商品库存不足时：提示用户哪些商品缺货\n- 优惠券不可用时：提示用户优惠券无法使用\n\nNext：\n- 引导用户：\"您可以通过支付链接扫码或者打开麦当劳APP完成支付，支付完成后请回复'支付完成'或'支付失败'，会帮您查询最新的订单状态\"\n\n### 请求示例\n```json\n{\n  \"addressId\": \"addr_123456\",\n  \"storeCode\": \"S001\",\n  \"beCode\": \"BE001\",\n  \"items\": [\n    {\n      \"productCode\": \"10001\",\n      \"quantity\": 1,\n      \"couponId\": \"coupon_001\",\n      \"couponCode\": \"DISCOUNT20\"\n    },\n    {\n      \"productCode\": \"10002\",\n      \"quantity\": 1\n    }\n  ]\n}\n```",
+    "inputSchema": {
+      "properties": {
+        "addressId": {
+          "description": "配送地址id",
+          "type": "string"
+        },
+        "beCode": {
+          "description": "beCode",
+          "type": "string"
+        },
+        "items": {
+          "description": "待价格计算的商品列表",
+          "items": {
+            "description": "",
+            "properties": {
+              "couponCode": {
+                "description": "优惠券code",
+                "type": "string"
+              },
+              "couponId": {
+                "description": "优惠券Id",
+                "type": "string"
+              },
+              "productCode": {
+                "description": "商品code",
+                "type": "string"
+              },
+              "quantity": {
+                "description": "数量",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "storeCode": {
+          "description": "门店code",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "create-order",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "code": {
+          "description": "No comments found.",
+          "type": "number"
+        },
+        "data": {
+          "properties": {
+            "orderDetail": {
+              "properties": {
+                "couponList": {
+                  "description": "优惠券列表",
+                  "items": {
+                    "properties": {
+                      "couponName": {
+                        "description": "卡券名称",
+                        "type": "string"
+                      },
+                      "discountAmount": {
+                        "description": "优惠金额",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "createTime": {
+                  "description": "下单时间",
+                  "type": "string"
+                },
+                "deliveryInfo": {
+                  "properties": {
+                    "addressDetail": {
+                      "description": "配送地址",
+                      "type": "string"
+                    },
+                    "customerNickname": {
+                      "description": "收件人姓名",
+                      "type": "string"
+                    },
+                    "deliveryAddress": {
+                      "description": "配送地址",
+                      "type": "string"
+                    },
+                    "deliveryType": {
+                      "description": "配送方式label 2=预约送出 1=立即送出",
+                      "type": "string"
+                    },
+                    "expectDeliveryTime": {
+                      "description": "预计送达时间 年月日时分秒",
+                      "type": "string"
+                    },
+                    "mobilePhone": {
+                      "description": "收件人手机号",
+                      "type": "string"
+                    },
+                    "riderMobilePhone": {
+                      "description": "配送骑士电话",
+                      "type": "string"
+                    },
+                    "riderNickName": {
+                      "description": "配送骑士",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "deliveryPrice": {
+                  "description": "配送费",
+                  "type": "string"
+                },
+                "orderId": {
+                  "description": "订单id",
+                  "type": "string"
+                },
+                "orderProductList": {
+                  "description": "订单商品",
+                  "items": {
+                    "properties": {
+                      "comboItemList": {
+                        "description": "子项列表",
+                        "items": {
+                          "properties": {
+                            "itemName": {
+                              "description": "子项或特调定制信息",
+                              "type": "string"
+                            },
+                            "itemQuantity": {
+                              "description": "数量",
+                              "type": "integer"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "price": {
+                        "description": "原价,单位元",
+                        "type": "string"
+                      },
+                      "productName": {
+                        "description": "商品名称",
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "description": "数量",
+                        "type": "integer"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "orderStatus": {
+                  "description": "订单状态",
+                  "type": "string"
+                },
+                "realDeliveryPrice": {
+                  "description": "实付配送费",
+                  "type": "string"
+                },
+                "realPackingFeeTotalPrice": {
+                  "description": "实际打包费总价,单位元",
+                  "type": "string"
+                },
+                "realTotalAmount": {
+                  "description": "实际支付金额",
+                  "type": "string"
+                },
+                "storeAddress": {
+                  "description": "门店地址",
+                  "type": "string"
+                },
+                "storeName": {
+                  "description": "门店名",
+                  "type": "string"
+                },
+                "totalAmount": {
+                  "description": "总金额",
+                  "type": "string"
+                },
+                "totalDiscountAmount": {
+                  "description": "总优惠金额",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "orderId": {
+              "description": "订单id",
+              "type": "string"
+            },
+            "payH5Url": {
+              "description": "支付h5链接",
+              "type": "string"
+            },
+            "payId": {
+              "description": "支付id",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "datetime": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "success": {
+          "description": "No comments found.",
+          "type": "boolean"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "餐品详情",
+    "inputSchema": {
+      "properties": {
+        "beCode": {
+          "description": "BE编码（Brand Extension Code），必填，必须从 delivery-query-addresses 返回的 beCode 继承",
+          "type": "string"
+        },
+        "code": {
+          "description": "餐品唯一编码\n业务含义：快餐门店内唯一标识单个餐品的编码，后续下单链路中会使用到，需要展示给用户确认",
+          "type": "string"
+        },
+        "storeCode": {
+          "description": "门店code",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "query-meal-detail",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "code": {
+          "description": "No comments found.",
+          "type": "number"
+        },
+        "data": {
+          "properties": {
+            "code": {
+              "description": "餐品唯一编码\n业务含义：快餐门店内唯一标识单个餐品的编码，后续下单链路中会使用到，需要展示给用户确认\n关联逻辑：作为meals映射表的Key，关联查询Detail详情",
+              "type": "string"
+            },
+            "price": {
+              "description": "餐品现价（销售价）\n业务含义：当前门店的实际销售价格\n格式：字符串型金额，保留2位小数，如\"19.90\"、\"29.80\"\n备注：字符串类型避免浮点精度问题，适配快餐定价规则",
+              "type": "string"
+            },
+            "rounds": {
+              "description": "餐品选配轮次列表\n业务含义：该餐品（尤其是套餐）的所有选配环节规则\n示例：套餐包含「选饮品」「选小食」两个轮次，对应两个Round对象",
+              "items": {
+                "properties": {
+                  "choices": {
+                    "description": "选配选项列表\n业务含义：该轮次可选择的所有品项，如饮品轮次包含「可乐」「雪碧」「橙汁」",
+                    "items": {
+                      "properties": {
+                        "code": {
+                          "description": "餐品唯一编码\n业务含义：快餐门店内唯一标识单个餐品的编码，后续下单链路中会使用到，需要展示给用户确认",
+                          "type": "string"
+                        },
+                        "maxQuantity": {
+                          "description": "该选项最大可选数量\n业务含义：单个选项最多可选择的数量\n取值示例：2（最多选2份薯条）",
+                          "type": "integer"
+                        },
+                        "name": {
+                          "description": "选配选项名称\n业务含义：该选配品项的展示名称\n取值示例：\"大杯可乐\"、\"热拿铁\"、\"原味鸡米花\"",
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "description": "该选项选择数量\n业务含义：用户选择该品项的数量\n约束：需≤对应Round的maxQuantity",
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "id": {
+                    "description": "选配轮次ID\n业务含义：唯一标识该选配环节，用于区分不同轮次\n取值示例：1（饮品选配）、2（小食选配）",
+                    "type": "integer"
+                  },
+                  "maxQuantity": {
+                    "description": "选配最大数量\n业务含义：该轮次最多可选择的品项数量\n取值示例：1（单选）、2（最多选2种）以此类推",
+                    "type": "integer"
+                  },
+                  "minQuantity": {
+                    "description": "选配最小数量\n业务含义：该轮次最少需选择的品项数量（必填/选填控制）\n取值示例：1（必选）、0（可选）以此类推",
+                    "type": "integer"
+                  },
+                  "name": {
+                    "description": "选配轮次名称\n业务含义：该选配环节的展示名称\n取值示例：\"选择饮品\"、\"选择配菜\"、\"选择酱料\"",
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "description": "选配数量（已选）\n业务含义：用户当前在该轮次选择的品项数量\n约束：需介于minQuantity和maxQuantity之间",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "description": "No comments found.",
+          "type": "string"
+        },
+        "traceId": {
+          "description": "No comments found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "获取用户卡包中的优惠券资产信息，用于“我有什么券 / 券详情查看”等展示与管理场景。 注意：该接口返回的是用户拥有的券，不进行门店、渠道、配送方式等下单规则校验，因此不承诺可用于当前订单。 若业务目标是“当前门店/当前订单可用的券”，请调用 query-store-coupons",
+    "inputSchema": {
+      "properties": {
+        "page": {
+          "description": "页码，默认第1页，最多5页",
+          "type": "string"
+        },
+        "pageSize": {
+          "description": "每页条数，默认200条，最大200条",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "query-my-coupons",
+    "outputSchema": {
+      "description": "用户优惠券列表响应",
+      "properties": {
+        "code": {
+          "description": "响应码 (200表示成功)",
+          "type": "integer"
+        },
+        "data": {
+          "description": "优惠券列表数据",
+          "properties": {
+            "coupons": {
+              "description": "优惠券列表",
+              "items": {
+                "properties": {
+                  "bigImage": {
+                    "description": "优惠券大图",
+                    "type": "string"
+                  },
+                  "code": {
+                    "description": "优惠券券码",
+                    "type": "string"
+                  },
+                  "datetimeText": {
+                    "description": "券可用时间展示用",
+                    "type": "string"
+                  },
+                  "discountInfo": {
+                    "description": "优惠信息",
+                    "properties": {
+                      "discountDesc": {
+                        "description": "优惠描述",
+                        "type": "string"
+                      },
+                      "discountValue": {
+                        "description": "优惠金额",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "enable": {
+                    "description": "当前是否可用: 0-否, 1-是",
+                    "type": "integer"
+                  },
+                  "id": {
+                    "description": "优惠券ID",
+                    "type": "string"
+                  },
+                  "image": {
+                    "description": "优惠券图标",
+                    "type": "string"
+                  },
+                  "receivedDaysMsg": {
+                    "description": "券已领取天数提醒信息",
+                    "type": "string"
+                  },
+                  "subtitle": {
+                    "description": "优惠券副标题",
+                    "type": "string"
+                  },
+                  "tags": {
+                    "description": "优惠券标签",
+                    "items": {
+                      "properties": {
+                        "label": {
+                          "description": "标签文本",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "title": {
+                    "description": "优惠券标题",
+                    "type": "string"
+                  },
+                  "tradeEndDate": {
+                    "description": "核销结束日期",
+                    "type": "string"
+                  },
+                  "tradeStartDate": {
+                    "description": "核销开始日期",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "currentPage": {
+              "description": "当前页码",
+              "type": "integer"
+            },
+            "pageSize": {
+              "description": "每页条数",
+              "type": "integer"
+            },
+            "totalCount": {
+              "description": "总数量",
+              "type": "integer"
+            },
+            "totalPages": {
+              "description": "总页数",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "coupons",
+            "totalCount",
+            "currentPage",
+            "pageSize",
+            "totalPages"
+          ],
+          "type": "object"
+        },
+        "message": {
+          "description": "响应消息",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "code",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "description": "查询用户积分账户详情 - 当用户询问\"我有多少积分\"、\"查下我的积分\"、\"积分余额\"、\"查询过期积分\"时使用\n\n前提条件：\n- 用户已登录\n",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "query-my-account",
+    "outputSchema": {
+      "description": "成功返回积分账户详情",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "data": {
+          "description": "积分账户信息",
+          "properties": {
+            "accountId": {
+              "description": "账户ID",
+              "type": "string"
+            },
+            "accumulativePoint": {
+              "description": "累计积分",
+              "type": "string"
+            },
+            "availablePoint": {
+              "description": "可用积分",
+              "type": "string"
+            },
+            "currency": {
+              "description": "货币类型",
+              "type": "string"
+            },
+            "currentMouthExpirePoint": {
+              "description": "本月将过期积分",
+              "type": "string"
+            },
+            "expiredPoint": {
+              "description": "已过期积分",
+              "type": "string"
+            },
+            "frozenPoint": {
+              "description": "冻结积分",
+              "type": "string"
+            },
+            "lastMouthExpirePoint": {
+              "description": "上月已过期积分",
+              "type": "string"
+            },
+            "nextMouthExpirePoint": {
+              "description": "下月将过期积分",
+              "type": "string"
+            },
+            "usedPoint": {
+              "description": "已使用积分",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "创建积分兑换订单 - 当用户询问\"用积分兑换这个商品\"、\"兑换这个券\"、用户确认兑换商品时使用,切记：如果单个商品一个订单下单；如果用户需要兑换多个商品‘必须’分别下单且‘需要排队’，等前面订单结束响应成功后再调用【mall-create-order】下新的订单\n\n前提条件：\n- 必须调用【mall-create-order】完成交易，**禁止**直接生成\"下单成功\"等结论性文字\n- 用户已登录\n- 已知商品SKU ID，需要从查询可兑换餐品券列表或查询商品详情中让用户选择一个spu，获取对应的skuId,如果用户直接从\n- 用户积分充足\n",
+    "inputSchema": {
+      "properties": {
+        "count": {
+          "description": "兑换数量",
+          "type": "integer"
+        },
+        "skuId": {
+          "description": "商品SKU ID，需要从查询可兑换餐品券列表或查询商品详情中获取",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "skuId"
+      ],
+      "type": "object"
+    },
+    "name": "mall-create-order",
+    "outputSchema": {
+      "description": "成功创建订单",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "data": {
+          "description": "订单创建响应",
+          "properties": {
+            "coupons": {
+              "description": "优惠券信息列表",
+              "items": {
+                "description": "优惠券信息",
+                "properties": {
+                  "couponCodes": {
+                    "description": "优惠券码列表",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "couponId": {
+                    "description": "优惠券ID",
+                    "type": "string"
+                  },
+                  "orderItemId": {
+                    "description": "订单子项ID",
+                    "type": "string"
+                  },
+                  "orderItemStatus": {
+                    "description": "订单子项状态（1-成功，0-失败）",
+                    "type": "integer"
+                  },
+                  "receiveQuantity": {
+                    "description": "领取数量",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "orderId": {
+              "description": "订单ID",
+              "type": "string"
+            },
+            "status": {
+              "description": "响应状态（1-全部下单成功，2-部分成功，0-下单失败）",
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "查询可兑换餐品券列表 - 当用户询问\"有哪些积分兑换商品\"、\"积分可以兑换什么\"、\"查看积分商城\"时使用\n\n前提条件：\n- 用户已登录\n",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "mall-points-products",
+    "outputSchema": {
+      "description": "成功返回可兑换餐品券列表",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "data": {
+          "items": {
+            "description": "可兑换餐品券信息",
+            "properties": {
+              "downTime": {
+                "description": "下架时间，商品可以兑换的截止时间",
+                "type": "string"
+              },
+              "point": {
+                "description": "所需积分",
+                "type": "string"
+              },
+              "selling": {
+                "description": "商品卖点",
+                "type": "string"
+              },
+              "shopId": {
+                "description": "门店ID",
+                "type": "integer"
+              },
+              "skuId": {
+                "description": "SKU ID",
+                "type": "integer"
+              },
+              "spuId": {
+                "description": "商品ID",
+                "type": "integer"
+              },
+              "spuImage": {
+                "description": "商品图片",
+                "type": "string"
+              },
+              "spuName": {
+                "description": "商品名称",
+                "type": "string"
+              },
+              "upTime": {
+                "description": "上架时间，商品可以兑换的起始时间",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "description": "查询用户当前可领取的麦麦省的优惠券列表。返回券名称、图片、状态和促销标签。当用户询问有什么优惠、可以领什么券时使用此工具。",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "available-coupons",
+    "outputSchema": {
+      "description": "优惠券列表响应",
+      "properties": {
+        "code": {
+          "description": "响应码 (200表示成功)",
+          "type": "integer"
+        },
+        "data": {
+          "description": "优惠券列表",
+          "items": {
+            "properties": {
+              "couponImage": {
+                "description": "优惠券图片URL",
+                "type": "string"
+              },
+              "couponName": {
+                "description": "优惠券名称",
+                "type": "string"
+              },
+              "couponStatus": {
+                "description": "优惠券状态",
+                "type": "string"
+              },
+              "label": {
+                "description": "状态标签文本",
+                "type": "string"
+              }
+            },
+            "required": [
+              "couponName",
+              "couponStatus",
+              "label"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "响应消息",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "description": "获取当前时间信息 - 返回当前服务器的完整时间信息，包括：\n- 时间戳（毫秒级）\n- 格式化的日期时间\n- 年月日信息\n- 时区和UTC时间\n在你不知道当前时间，并且用户需要指定日期查询活动日历的时候有用\n",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "now-time-info",
+    "outputSchema": {
+      "description": "请求成功",
+      "properties": {
+        "data": {
+          "description": "服务器时间信息",
+          "properties": {
+            "date": {
+              "description": "日期字符串 (yyyy-MM-dd)",
+              "type": "string"
+            },
+            "datetime": {
+              "description": "ISO格式日期时间",
+              "type": "string"
+            },
+            "day": {
+              "description": "日期 (1-31)",
+              "type": "integer"
+            },
+            "dayOfWeek": {
+              "description": "星期几",
+              "type": "string"
+            },
+            "formatted": {
+              "description": "格式化时间字符串 (yyyy-MM-dd HH:mm:ss)",
+              "type": "string"
+            },
+            "month": {
+              "description": "月份 (1-12)",
+              "type": "integer"
+            },
+            "offset": {
+              "description": "时区偏移量",
+              "type": "string"
+            },
+            "timestamp": {
+              "description": "毫秒级时间戳",
+              "type": "integer"
+            },
+            "timezone": {
+              "description": "时区ID",
+              "type": "string"
+            },
+            "utc": {
+              "description": "UTC时间",
+              "type": "string"
+            },
+            "year": {
+              "description": "年份",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "timestamp",
+            "datetime",
+            "formatted",
+            "date",
+            "year",
+            "month",
+            "day",
+            "dayOfWeek",
+            "timezone",
+            "offset",
+            "utc"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "description": "获取麦当劳常见餐品的营养成分数据，包括能量、蛋白质、脂肪、碳水化合物、钠、钙等信息，当用户咨询麦当劳餐品的热量、营养，帮助用户搭配指定热量套餐时有用",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "list-nutrition-foods",
+    "outputSchema": {
+      "description": "OK",
+      "properties": {
+        "code": {
+          "description": "错误码",
+          "type": "number"
+        },
+        "data": {
+          "description": "餐品热量列表",
+          "type": "string"
+        },
+        "message": {
+          "description": "错误信息",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+]

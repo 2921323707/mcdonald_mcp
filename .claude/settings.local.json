@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from src.backend.app import app; print\\(''Import OK''\\)\")",
+      "Bash(timeout 5 python -m flask --app src.backend.app run --port 5001)",
+      "Bash(taskkill /F /FI \"WINDOWTITLE eq *Flask*\")",
+      "Bash(python dump_tools.py)",
+      "Bash(python -c \":*)",
+      "Bash(timeout 15 python -c \":*)",
+      "Bash(mv README.md image.png docs/)",
+      "Bash(mkdir -p Scripts)",
+      "Bash(mv dump_tools.py Scripts/)"
+    ]
+  }
+}
